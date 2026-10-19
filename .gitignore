@@ -94,3 +94,7 @@ u-boot
 u-boot.map
 u-boot.srec
 uboot.bin
+
+# hlk7628n-uboot build outputs
+/out/
+/.toolchain/

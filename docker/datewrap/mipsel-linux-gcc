@@ -1,0 +1,5 @@
+#!/bin/sh
+# GCC wrapper that pins __DATE__/__TIME__ so the image is reproducible.
+# Defaults reproduce the vendor image (built May 23 2020 14:42:28).
+exec /opt/buildroot-gcc342/bin/mipsel-linux-gcc \
+    "-D__DATE__=\"${BUILD_DATE:-May 23 2020}\"" "-D__TIME__=\"${BUILD_TIME:-14:42:28}\"" "$@"
