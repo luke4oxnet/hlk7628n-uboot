@@ -684,7 +684,6 @@ void printBanner(void)
     printf("-------------------------------------------------------------------------\n");
     printf("             https://github.com/gnubee-git\n");
     printf("-------------%s build %s %s--------------------\n", hlk_type, __DATE__, __TIME__);
-		printf("MTRIQ:C,D\n");
     printf("-------------------------------------------------------------------------\n");
 }
 void board_init_f(ulong bootflag)
@@ -1075,11 +1074,6 @@ int tftp_config(int type, char *argv[])
 		//s = "7688A.bin";
 		//s = "7628E.bin";
 		s = "firmware.bin";
-	} else if (SEL_ENV_WRITE_FLASH == type) {
-		argv[1] = "0x80100000";
-
-		printf("\tInput Uboot Env filename ");
-		s = "env.bin";
 	}
 
 	if (s != NULL) {
@@ -1449,7 +1443,7 @@ void oled_load_banner(void)
 }
 #endif
 
-#if 1
+#if 0	/* not in vendor image (benegon addition) */
 int burn_env(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
 	tftp_config(SEL_ENV_WRITE_FLASH, argv);
@@ -1469,7 +1463,7 @@ int burn_env(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 }
 #endif
 
-#if 1
+#if 0	/* not in vendor image (benegon addition) */
 int burn_uboot(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
 	tftp_config(SEL_LOAD_BOOT_WRITE_FLASH, argv);
@@ -2275,10 +2269,8 @@ void board_init_r (gd_t *id, ulong dest_addr)
 		argv[1] = &addr_str[0];
 		printf("   \n3: System Boot system code via Flash.\n");
 		do_bootm(cmdtp, 0, 2, argv);
-		BootType = '5';
 	}
-
-	{
+	else {
 		char *argv[4];
 		int argc= 3;
 
@@ -2288,8 +2280,6 @@ void board_init_r (gd_t *id, ulong dest_addr)
 #if (CONFIG_COMMANDS & CFG_CMD_NET)
 		eth_initialize(gd->bd);
 #endif
-
-		bgn_init_gpio();
 
 		switch(BootType) {
 		case '1':
@@ -3062,13 +3052,5 @@ void disable_pcie(void)
 }
 
 
-int do_invalidate_linux(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[]){
-	return raspi_erase(CFG_KERN_ADDR, 0x10000);
-}
-
-U_BOOT_CMD(
-	invalidate_linux,	1,	1,	do_invalidate_linux,
-	"invalidate_linux - erase first sector of linux\n",
-);
 
 
