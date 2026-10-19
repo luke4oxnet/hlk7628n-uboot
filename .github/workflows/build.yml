@@ -1,0 +1,60 @@
+name: build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: build (${{ matrix.variant }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: rom
+            artifact: hlk7628n-uboot-flash
+          - variant: ram
+            artifact: hlk7628n-uboot-ram-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache toolchain (buildroot-gcc342)
+        uses: actions/cache@v4
+        with:
+          path: .toolchain
+          key: buildroot-gcc342-${{ hashFiles('docker/build.sh') }}
+
+      - name: Build ${{ matrix.variant }} image
+        run: docker/build.sh ${{ matrix.variant }}
+
+      - name: Upload ${{ matrix.artifact }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            out/${{ matrix.variant }}/hlk7628n_uboot_*.bin
+            out/${{ matrix.variant }}/SHA256SUMS-${{ matrix.variant }}.txt
+            out/${{ matrix.variant }}/*.elf
+            out/${{ matrix.variant }}/*.map
+            out/${{ matrix.variant }}/build.log
+          if-no-files-found: error
+
+  reproduce:
+    name: reproduce vendor image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache toolchain (buildroot-gcc342)
+        uses: actions/cache@v4
+        with:
+          path: .toolchain
+          key: buildroot-gcc342-${{ hashFiles('docker/build.sh') }}
+
+      # Builds the flash image with the vendor build timestamp and checks it
+      # against docker/vendor-flash.sha256. Once the sources intentionally
+      # diverge from the vendor image, drop this job or update the hash.
+      - name: Build with pinned timestamp and verify
+        run: PIN_DATE=1 VERIFY=1 docker/build.sh rom
