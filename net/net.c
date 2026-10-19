@@ -1846,7 +1846,6 @@ int NetLoopHttpd(void){
 #ifdef OLED_1_3
     OLED_ShowString(0,4,httpd_ipaddr);
 #endif
-	if(!getenv("ipaddr"))
     setenv("ipaddr",httpd_ipaddr);
 #ifdef CONFIG_NET_MULTI
 	NetRestarted = 0;

@@ -125,7 +125,6 @@ static void httpd_state_reset(void){
 static int httpd_findandstore_firstchunk(void){
 	char *start = NULL;
 	char *end = NULL;
-	char *end2 = NULL;
 #ifdef CFG_DIRECT_FLASH_HTTPD
 	flash_info_t *info = &flash_info[0];
 #endif
@@ -142,13 +141,8 @@ static int httpd_findandstore_firstchunk(void){
 		// find upgrade type
 
 		end = (char *)strstr((char *)start, "name=\"firmware\"");
-		end2 = (char *)strstr((char *)start, "name=\"firmware4b\"");
 
-		if(end || end2){
-
-			if(end2){
-				/* FIXME Perform the 4B update. */
-			}
+		if(end){
 
 			printf("Upgrade type: firmware\n");
 			webfailsafe_upgrade_type = WEBFAILSAFE_UPGRADE_TYPE_FIRMWARE;
