@@ -211,7 +211,11 @@ void serial_setbrg (void)
     defined(RT6855_ASIC_BOARD) || defined(RT6855_FPGA_BOARD) || \
     defined(MT7620_ASIC_BOARD) || defined(MT7620_FPGA_BOARD) || \
     defined(MT7628_ASIC_BOARD) || defined(MT7628_FPGA_BOARD)
-	clock_divisor = (40*1000*1000/ SERIAL_CLOCK_DIVISOR / CONFIG_BAUDRATE);
+	/* Console at 115200 (as in the vendor image), divisor rounded to nearest:
+	 * 40 MHz / 16 / 115200 = 21.7 -> 22 (~113636 baud, 1.4% error);
+	 * plain truncation would give 21 (~119048 baud, 3.3% error). */
+#define CONSOLE_BAUDRATE 115200
+	clock_divisor = ((40*1000*1000 / SERIAL_CLOCK_DIVISOR) + CONSOLE_BAUDRATE / 2) / CONSOLE_BAUDRATE;
 #elif  defined(MT7621_ASIC_BOARD) || defined(MT7621_FPGA_BOARD)
 	clock_divisor = (50 * 1000*1000/ SERIAL_CLOCK_DIVISOR / CONFIG_BAUDRATE);
 #else
