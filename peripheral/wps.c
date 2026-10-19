@@ -55,6 +55,7 @@ int readwps(void)//按下输出0,未按下输出1
     return (WPSDATA & (1<<6));
 }
 
+#if 0	/* benegon GPIO / I2C bit-bang additions: not in vendor image */
 void bgn_init_gpio(void)
 {
 	/* First disable
@@ -452,3 +453,5 @@ U_BOOT_CMD(
 
 
 
+
+#endif /* benegon GPIO / I2C bit-bang additions */
