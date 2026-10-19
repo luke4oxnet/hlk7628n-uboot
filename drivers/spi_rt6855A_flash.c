@@ -280,7 +280,6 @@ static struct chip_info chips_data [] = {
 	{ "GD25Q32B",		0xC8, 0x40160000, 64 * 1024, 64,  0 },
 	{ "GD25Q64B",		0xC8, 0x40170000, 64 * 1024, 128,  0 },
 	{ "GD25Q128C",		0xC8, 0x40180000, 64 * 1024, 256,  0 },
-	{ "QH256XIQ",		0x20, 0x60190000, 64 * 1024, 512,  1 },
 };
 
 
@@ -1611,10 +1610,8 @@ int do_mem_cp(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 	else if (!strncmp(argv[0], "cp.uboot", 9)) {
 		dest = 0;
 		printf("\n Copy uboot[%d byte] to SPI Flash[0x%08X].... \n", count, dest);
-	} else if (!strncmp(argv[0], "cp.env", 9)) {
-		CFG_ENV_ADDR - CFG_FLASH_BASE;
-		printf("\n Copy uboot[%d byte] to SPI Flash[0x%08X].... \n", count, dest);
-	} else {
+	}
+	else {
 		printf ("Usage:\n%s\n", cmdtp->usage);
 		return 1;
 	}
@@ -1628,7 +1625,6 @@ U_BOOT_CMD(
 	"cp      - memory copy\n",
 	"\ncp.uboot\n    - copy uboot block\n"
 	"cp.linux\n    - copy linux kernel block\n"
-	"cp.env\n    - copy env block\n"
 );
 
 int do_flerase (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
@@ -1663,12 +1659,6 @@ int do_flerase (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 		raspi_unprotect();
 		rcode = raspi_erase(0, size);
 		return rcode;
-	} else if (strcmp(argv[1], "env") == 0) {
-		printf("\n Erase env block !!\n");
-		printf("From 0x%X length 0x%X\n", CFG_ENV_ADDR, CFG_CONFIG_SIZE);
-		raspi_unprotect();
-		rcode = raspi_erase(CFG_ENV_ADDR, CFG_CONFIG_SIZE);
-		return rcode;
 	}
 
 	printf ("Usage:\n%s\n", cmdtp->usage);
@@ -1681,7 +1671,6 @@ U_BOOT_CMD(
 	"\nerase all\n    - erase all FLASH banks\n"
 	"erase uboot\n    - erase uboot block\n"
 	"erase linux\n    - erase linux kernel block\n"
-	"erase env\n	  - erase env block\n"
 );
 
 #define SPI_FLASH_DBG_CMD 
@@ -1706,9 +1695,9 @@ int ralink_spi_command(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 			return 0;
 		}
 		len = raspi_read(p, addr, len); //reuse len
-		//printf("read len: %d\n", len);
+		printf("read len: %d\n", len);
 		for (i = 0; i < len; i++) {
-			printf("%02x ", p[i]);
+			printf("%x ", p[i]);
 		}
 		printf("\n");
 		free(p);
@@ -1732,63 +1721,6 @@ int ralink_spi_command(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 			printf("malloc error\n");
 			return 0;
 		}
-		{
-			unsigned int read_len;
-			u8 last_line[16] = {0};
-			u8 cur_line[16];
-			int j;
-
-			u8 *read_p = (u8 *)malloc(65536);
-			if (!read_p) {
-				printf("malloc error\n");
-				return 0;
-			}
-
-			//读出整个64K 扇区数据
-			//写地址偏移 offset对齐 64K
-			read_len = raspi_read(read_p, o-(o%65536), 65536); //reuse len
-
-			for (i = 0; i < read_len; i++) {
-				//printf("%02x ", read_p[i]);
-				cur_line[i%16] = read_p[i];
-				#if 1
-				if ( (i != 0) && ((i+1)%16 == 0) ) {
-					if (memcmp(cur_line, last_line, 16) == 0) {
-						continue;
-					} else {
-						#if 0
-						printf("%08x\t", (i+1)-16);
-						for (j = 0; j < 16; j++) {
-							printf("%02x ", cur_line[j]);
-						}
-						printf("\n");
-						#endif
-						memcpy(last_line, cur_line, 16);
-					}
-				}
-				#else
-				if ( (i != 0) && ((i+1)%16 == 0) ) {
-					for (j = 0; j < 16; j++) {
-						printf("%02x ", cur_line[j]);
-					}
-
-					printf("\n");
-				}
-
-				#endif
-			}
-			raspi_erase(o-(o%65536), 65536);	//先擦除
-
-			for (i = 0; i < l; i++) {
-				t[0] = argv[3][2*i];
-				t[1] = argv[3][2*i+1];
-				read_p[o%65536+i] = simple_strtoul(t, NULL, 16);
-			}
-
-			raspi_write(read_p, o-(o%65536), 65536);
-			free(read_p);
-		}
-#if 0
 		for (i = 0; i < l; i++) {
 			t[0] = argv[3][2*i];
 			t[1] = argv[3][2*i+1];
@@ -1796,7 +1728,6 @@ int ralink_spi_command(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 		}
 		printf("write offs 0x%x, len 0x%x\n", o, l);
 		raspi_write(p, o, l);
-#endif
 		free(p);
 	}
 	else if (!strncmp(argv[1], "sr", 3)) {
@@ -1959,21 +1890,6 @@ U_BOOT_CMD(
 U_BOOT_CMD(
 	flash_always_3byte, CFG_MAXARGS, 1, flash_always_to_3byte,
 	"flash_always_3byte always switch to 3byte\n",
-	"\n"
-);
-extern int burn_env(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[]);
-
-U_BOOT_CMD(
-	burn_env, CFG_MAXARGS, 1, burn_env,
-	"burn_env\n",
-	"\n"
-);
-
-extern int burn_uboot(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[]);
-
-U_BOOT_CMD(
-	burn_uboot, CFG_MAXARGS, 1, burn_uboot,
-	"burn_uboot\n",
 	"\n"
 );
 
